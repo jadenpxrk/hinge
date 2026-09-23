@@ -1,0 +1,15 @@
+.DS_Store
+build/
+DerivedData/
+*.xcodeproj
+xcuserdata/
+*.xcuserstate
+.swiftpm/
+.idea/
+.agents/
+.serena/
+.claude/
+.grok/
+*.moved-aside
+Hinge.app
+*.dSYM

@@ -1,0 +1,25 @@
+{
+  "fill": {
+    "solid": "srgb:0.05500,0.09000,0.16000,1.00000"
+  },
+  "groups": [
+    {
+      "name": "Hinge lid glyph",
+      "blur-material": null,
+      "layers": [
+        {
+          "image-name": "Hinge.png",
+          "name": "Ivory open lid and amber awake dot",
+          "position": {
+            "scale": 0.75,
+            "translation-in-points": [0, 0]
+          }
+        }
+      ],
+      "shadow": { "kind": "neutral", "opacity": 0.0 },
+      "specular": false,
+      "translucency": { "enabled": false, "value": 0.0 }
+    }
+  ],
+  "supported-platforms": { "squares": ["macOS"] }
+}

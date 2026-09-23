@@ -1,0 +1,51 @@
+name: Hinge
+options:
+  minimumXcodeGenVersion: "2.38.0"
+  deploymentTarget:
+    macOS: "14.0"
+  defaultConfig: Release
+  createIntermediateGroups: true
+settings:
+  base:
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    SWIFT_VERSION: "5.9"
+    ARCHS: arm64
+    EXCLUDED_ARCHS: x86_64 i386
+    ONLY_ACTIVE_ARCH: "YES"
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGNING_ALLOWED: "YES"
+    CODE_SIGNING_REQUIRED: "NO"
+    AD_HOC_CODE_SIGNING_ALLOWED: "YES"
+    ENABLE_HARDENED_RUNTIME: "YES"
+    COMBINE_HIDPI_IMAGES: "YES"
+    PRODUCT_BUNDLE_IDENTIFIER: dev.hinge.Hinge
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    GENERATE_INFOPLIST_FILE: "NO"
+    INFOPLIST_FILE: Hinge/Info.plist
+    CODE_SIGN_ENTITLEMENTS: Hinge/Hinge.entitlements
+    SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+    GCC_TREAT_WARNINGS_AS_ERRORS: YES
+    OTHER_LDFLAGS: ["-framework", "IOKit", "-framework", "AppKit", "-framework", "CoreFoundation"]
+targets:
+  Hinge:
+    type: application
+    platform: macOS
+    sources:
+      - path: Hinge
+        excludes:
+          - Info.plist
+          - "*.entitlements"
+    settings:
+      base:
+        PRODUCT_NAME: Hinge
+        ASSETCATALOG_COMPILER_APPICON_NAME: Hinge
+        LD_RUNPATH_SEARCH_PATHS: "@executable_path/../Frameworks"
+        INFOPLIST_KEY_LSUIElement: "YES"
+    dependencies:
+      - sdk: AppKit.framework
+      - sdk: IOKit.framework
+      - sdk: CoreFoundation.framework
+    scheme:
+      testTargets: []

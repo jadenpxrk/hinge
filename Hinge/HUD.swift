@@ -9,8 +9,7 @@ enum ArmedHUD {
 
     static func showArmed(mode: ArmMode) {
         hide()
-        guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
-              let screen = NSScreen.screens.first(where: { screen in
+        guard let screen = NSScreen.screens.first(where: { screen in
                   guard let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else { return false }
                   return CGDisplayIsBuiltin(id.uint32Value) != 0
               }) else { return }

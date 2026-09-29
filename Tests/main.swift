@@ -120,6 +120,7 @@ func runTests() throws {
         ("batteryFloorRaised", testBatteryFloorRaised),
         ("recoveryKeepsLowBatteryStart", testRecoveryKeepsLowBatteryStart),
         ("pausedSafetyStopOnDisconnect", testPausedSafetyStopOnDisconnect),
+        ("recheckRestoresLeftoverRecord", testRecheckRestoresLeftoverRecord),
         ("thermal", testThermal),
         ("telemetryDropout", testTelemetryDropout),
         ("safetyStopRestoreFailure", testSafetyStopRestoreFailure),
@@ -397,6 +398,18 @@ func testPausedSafetyStopOnDisconnect() throws {
     TestSystem.externalDisplay = false
     engine.tickOnce()
     try check(!engine.armed && !TestSystem.flag("spi"), "disconnecting a display while too warm ends the session instead of resuming")
+}
+
+@MainActor
+func testRecheckRestoresLeftoverRecord() throws {
+    _ = try fresh("recheckRestoresLeftoverRecord")
+    guard try StateFile.acquireLock() else { throw TestFailure("recheck setup could not lock") }
+    try StateFile.markDirty(session: UUID())
+    TestSystem.setFlag("spi", true)
+    StateFile.releaseLock()
+    TestSystem.spiEnableOK = false
+    try? Watchdog.recheckLidSleep()
+    try check(!TestSystem.flag("spi"), "lid re-check restores a crashed owner's change before pulsing")
 }
 
 @MainActor

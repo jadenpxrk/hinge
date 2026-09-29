@@ -170,9 +170,11 @@ enum Watchdog {
 
     /// Re-runs XNU's lid-closed sleep decision without privileges: the clamshell bit going 1→0 with the lid
     /// closed makes IOPMrootDomain evaluate shouldSleepOnClamshellClosed(). The pulse is recorded so a crash
-    /// between the two calls is recovered. Returns without pulsing when another Hinge owns the session.
+    /// between the two calls is recovered. A crashed owner's record is restored first so marking the pulse cannot
+    /// overwrite it. Returns without pulsing when another Hinge owns the session.
     static func recheckLidSleep() throws {
         guard try StateFile.acquireLock() else { return }
+        try restoreOwned()
         try StateFile.markDirty(session: UUID())
         guard ClamshellSPI().setLidSleepDisabled(true) else {
             try StateFile.clearDirty()

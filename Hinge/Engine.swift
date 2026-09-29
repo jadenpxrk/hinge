@@ -17,7 +17,7 @@ final class StayEngine {
     var needsRecovery: Bool { (StateFile.ownsLock && !armed) || sleepPending }
     private var sleepPending = false
     private var missingBatterySince: TimeInterval?
-    /// On battery, stop at or below this charge. A deliberate start at or below the floor lowers it to just under the starting charge.
+    /// Set only for a deliberate start at or below the battery floor: stop at or below this charge instead of the floor.
     private var batteryStopAt: Int?
     private var awaitingCloseSince: TimeInterval?
     private(set) var notice: String?
@@ -52,11 +52,11 @@ final class StayEngine {
         if armed { return paused || reassert() }
         armMode = mode
         notice = nil
+        if needsRecovery, !disarm(reason: "retry recovery") { return false }
         if let reason = safetyReason(now: ProcessInfo.processInfo.systemUptime, arming: true) {
             lastError = reason
             return false
         }
-        if needsRecovery, !disarm(reason: "retry recovery") { return false }
         lastError = nil
         do {
             guard try StateFile.acquireLock() else {
@@ -232,7 +232,7 @@ final class StayEngine {
         let battery = Battery.read()
         if battery.onBattery == false {
             missingBatterySince = nil
-            batteryStopAt = floor
+            batteryStopAt = nil
             return nil
         }
         guard battery.onBattery == true, let percent = battery.percent else {
@@ -245,7 +245,7 @@ final class StayEngine {
         missingBatterySince = nil
         if percent == 0 { return "Battery reports 0%. Awake mode is off for battery protection." }
         if arming || percent > floor {
-            batteryStopAt = min(floor, percent - 1)
+            batteryStopAt = percent > floor ? nil : percent - 1
             return nil
         }
         return percent <= batteryStopAt ?? floor ? "Stopped for battery protection (\(percent)% remaining)." : nil

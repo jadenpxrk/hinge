@@ -117,6 +117,8 @@ func runTests() throws {
         ("crossProcessOwnerCrashHung", testCrossProcessOwnerCrashHung),
         ("corruptRecordAndLockHardening", testCorruptRecordAndLockHardening),
         ("batteryPolicy", testBatteryPolicy),
+        ("batteryFloorRaised", testBatteryFloorRaised),
+        ("recoveryKeepsLowBatteryStart", testRecoveryKeepsLowBatteryStart),
         ("thermal", testThermal),
         ("telemetryDropout", testTelemetryDropout),
         ("safetyStopRestoreFailure", testSafetyStopRestoreFailure),
@@ -348,6 +350,41 @@ func testBatteryPolicy() throws {
     try check(!engine.armed && engine.notice != nil && PowerSleep.calls == sleepCalls + 1, "unplugging below the floor restores and requests sleep with lid closed")
     Battery.value = BatteryReading(percent: 80, onBattery: true)
     try check(engine.arm(), "battery session can restart after charge recovers")
+}
+
+@MainActor
+func testBatteryFloorRaised() throws {
+    let engine = try fresh("batteryFloorRaised")
+    Defaults.batteryFloor = 10
+    Battery.value = BatteryReading(percent: 60, onBattery: true)
+    try check(engine.arm(), "battery session starts above the floor")
+    Battery.value = BatteryReading(percent: 40, onBattery: true)
+    engine.tickOnce()
+    try check(engine.armed, "session continues above the floor")
+    Defaults.batteryFloor = 50
+    engine.tickOnce()
+    try check(!engine.armed && !TestSystem.flag("spi"), "raising the battery floor mid-session takes effect on the next check")
+    Defaults.batteryFloor = 20
+    Battery.value = BatteryReading(percent: 15, onBattery: true)
+    try check(engine.arm(), "a deliberate start below the floor is allowed")
+    Defaults.batteryFloor = 30
+    engine.tickOnce()
+    try check(engine.armed, "raising the floor keeps a deliberate low-battery start's allowance")
+}
+
+@MainActor
+func testRecoveryKeepsLowBatteryStart() throws {
+    let engine = try fresh("recoveryKeepsLowBatteryStart")
+    Defaults.batteryFloor = 10
+    Battery.value = BatteryReading(percent: 80, onBattery: true)
+    try check(engine.arm(), "battery session starts")
+    TestSystem.spiRestoreOK = false
+    try check(!engine.disarm() && engine.needsRecovery, "failed restore leaves recovery pending")
+    TestSystem.spiRestoreOK = true
+    Battery.value = BatteryReading(percent: 8, onBattery: true)
+    try check(engine.arm(), "a deliberate low-battery start retries pending recovery first")
+    engine.tickOnce()
+    try check(engine.armed, "pending recovery does not discard the low-battery allowance")
 }
 
 @MainActor

@@ -18,14 +18,17 @@ codesign --verify --deep --strict "$OUT"
 # Shell has no RENAME_SWAP; a first install uses RENAME_EXCL instead.
 install_app() {
   STAGED="$(dirname "$2")/.hinge-install.$$"
+  trap 'rm -rf "$STAGED"; exit 130' INT TERM HUP
   rm -rf "$STAGED"
   if ditto "$1" "$STAGED" && codesign --verify --deep --strict "$STAGED" &&
     xcrun swift -e 'import Darwin; let a = CommandLine.arguments
       exit(renamex_np(a[1], a[2], UInt32(RENAME_SWAP)) == 0 ||
         (errno == ENOENT && renamex_np(a[1], a[2], UInt32(RENAME_EXCL)) == 0) ? 0 : 1)' "$STAGED" "$2"; then
     rm -rf "$STAGED"
+    trap - INT TERM HUP
   else
     rm -rf "$STAGED"
+    trap - INT TERM HUP
     echo "Hinge installation failed: $2 left unchanged" >&2
     exit 1
   fi

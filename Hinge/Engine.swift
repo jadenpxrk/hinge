@@ -15,8 +15,8 @@ final class StayEngine {
     var needsRecovery: Bool { (StateFile.ownsLock && !armed) || sleepPending }
     private var sleepPending = false
     private var missingBatterySince: TimeInterval?
-    private var batteryWasAboveFloor = false
-    private var lowBatteryArmPercent: Int?
+    /// On battery, stop at or below this charge. A deliberate start at or below the floor lowers it to just under the starting charge.
+    private var batteryStopAt: Int?
     private var awaitingCloseSince: TimeInterval?
     private(set) var notice: String?
 
@@ -86,7 +86,7 @@ final class StayEngine {
         armed = false
         paused = false
         awaitingCloseSince = nil
-        lowBatteryArmPercent = nil
+        batteryStopAt = nil
         IdleHold.release()
         guard StateFile.ownsLock else { return finishSafetySleep() }
         do {
@@ -227,44 +227,28 @@ final class StayEngine {
         if Thermals.state == .serious || Thermals.state == .critical {
             return "Mac is too warm. Wait for it to cool before keeping it awake."
         }
+        let floor = Defaults.batteryFloor
+        guard floor > 0 else { missingBatterySince = nil; return nil }
         let battery = Battery.read()
-        guard Defaults.batteryFloor > 0 else { missingBatterySince = nil; lowBatteryArmPercent = nil; return nil }
         if battery.onBattery == false {
             missingBatterySince = nil
-            batteryWasAboveFloor = true
-            lowBatteryArmPercent = nil
+            batteryStopAt = floor
             return nil
         }
-        if battery.onBattery == true, let percent = battery.percent {
-            missingBatterySince = nil
-            if percent == 0 {
-                return "Battery reports 0%. Awake mode is off for battery protection."
-            }
-            if arming {
-                batteryWasAboveFloor = percent > Defaults.batteryFloor
-                lowBatteryArmPercent = batteryWasAboveFloor ? nil : percent
-                return nil
-            }
-            if percent > Defaults.batteryFloor {
-                batteryWasAboveFloor = true
-                lowBatteryArmPercent = nil
-                return nil
-            }
-            if let lowBatteryArmPercent, percent < lowBatteryArmPercent {
-                self.lowBatteryArmPercent = nil
-                return "Stopped for battery protection (\(percent)% remaining)."
-            }
-            if batteryWasAboveFloor {
-                batteryWasAboveFloor = false
-                return "Stopped for battery protection (\(percent)% remaining)."
+        guard battery.onBattery == true, let percent = battery.percent else {
+            if missingBatterySince == nil { missingBatterySince = now }
+            if arming || now - (missingBatterySince ?? now) >= 15 {
+                return "Battery status is unavailable. Awake mode is off for battery protection."
             }
             return nil
         }
-        if missingBatterySince == nil { missingBatterySince = now }
-        if arming || now - (missingBatterySince ?? now) >= 15 {
-            return "Battery status is unavailable. Awake mode is off for battery protection."
+        missingBatterySince = nil
+        if percent == 0 { return "Battery reports 0%. Awake mode is off for battery protection." }
+        if arming || percent > floor {
+            batteryStopAt = min(floor, percent - 1)
+            return nil
         }
-        return nil
+        return percent <= batteryStopAt ?? floor ? "Stopped for battery protection (\(percent)% remaining)." : nil
     }
 
     /// Safety stops fail closed. Once Hinge's clamshell bit is cleared with the lid closed, XNU re-runs its own

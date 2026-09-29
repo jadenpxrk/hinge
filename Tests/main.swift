@@ -119,6 +119,7 @@ func runTests() throws {
         ("batteryPolicy", testBatteryPolicy),
         ("batteryFloorRaised", testBatteryFloorRaised),
         ("recoveryKeepsLowBatteryStart", testRecoveryKeepsLowBatteryStart),
+        ("pausedSafetyStopOnDisconnect", testPausedSafetyStopOnDisconnect),
         ("thermal", testThermal),
         ("telemetryDropout", testTelemetryDropout),
         ("safetyStopRestoreFailure", testSafetyStopRestoreFailure),
@@ -385,6 +386,17 @@ func testRecoveryKeepsLowBatteryStart() throws {
     try check(engine.arm(), "a deliberate low-battery start retries pending recovery first")
     engine.tickOnce()
     try check(engine.armed, "pending recovery does not discard the low-battery allowance")
+}
+
+@MainActor
+func testPausedSafetyStopOnDisconnect() throws {
+    let engine = try fresh("pausedSafetyStopOnDisconnect")
+    TestSystem.externalDisplay = true
+    try check(engine.arm() && engine.paused, "arming with an external display pauses")
+    Thermals.state = .critical
+    TestSystem.externalDisplay = false
+    engine.tickOnce()
+    try check(!engine.armed && !TestSystem.flag("spi"), "disconnecting a display while too warm ends the session instead of resuming")
 }
 
 @MainActor

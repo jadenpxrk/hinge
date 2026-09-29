@@ -212,13 +212,14 @@ final class StayEngine {
             return
         }
         if Displays.hasExternal, !paused { pause(); return }
-        if paused, !Displays.hasExternal { resume(); return }
         if let reason = safetyReason(now: now, arming: false) {
             notice = reason
             // While paused Hinge is not holding the Mac awake, so there is nothing to fail closed.
             sleepPending = !paused
             _ = disarm(reason: "safety stop")
-        } else if !paused {
+        } else if paused {
+            if !Displays.hasExternal { resume() }
+        } else {
             reassert()
         }
     }

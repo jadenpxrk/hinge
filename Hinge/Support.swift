@@ -13,11 +13,8 @@ struct HingeError: LocalizedError {
 }
 
 struct DirtyState: Codable {
-    var pid: Int32
     var armedAt: Date
-    // Optional so recovery can read records written by earlier versions.
-    var session: UUID?
-    // Older records also encoded a backend key; extra keys are ignored.
+    var session: UUID
 }
 
 enum StateFile {
@@ -70,7 +67,7 @@ enum StateFile {
 
     static func markDirty(session: UUID) throws {
         guard ownsLock else { throw HingeError(message: "No ownership of the awake session.") }
-        let state = DirtyState(pid: getpid(), armedAt: Date(), session: session)
+        let state = DirtyState(armedAt: Date(), session: session)
         try writeAtomically(JSONEncoder().encode(state), to: Paths.dirtyURL)
     }
 
@@ -102,11 +99,7 @@ enum StateFile {
             throw HingeError(message: "The recovery record is not a valid user-owned file.")
         }
         let data = try handle.readToEnd() ?? Data()
-        let state = try JSONDecoder().decode(DirtyState.self, from: data)
-        guard state.pid > 0 else {
-            throw HingeError(message: "The recovery record is invalid. Sleep settings were left unchanged.")
-        }
-        return state
+        return try JSONDecoder().decode(DirtyState.self, from: data)
     }
 
     static func clearDirty() throws {
@@ -123,10 +116,6 @@ enum StateFile {
 
     static func stopRequested(session: UUID) -> Bool {
         (try? String(contentsOf: Paths.stopURL, encoding: .utf8)) == session.uuidString
-    }
-
-    static func pidAlive(_ pid: Int32) -> Bool {
-        pid > 0 && (kill(pid, 0) == 0 || errno == EPERM)
     }
 }
 
@@ -171,10 +160,7 @@ enum Watchdog {
     /// Caller must hold the session lock. Unrecorded system settings are never reset.
     static func restoreOwned() throws {
         guard StateFile.ownsLock else { throw HingeError(message: "Another Hinge session is active.") }
-        guard let dirty = try StateFile.readDirty() else { return }
-        if dirty.session == nil, StateFile.pidAlive(dirty.pid) {
-            throw HingeError(message: "Quit the older running version of Hinge before continuing.")
-        }
+        guard try StateFile.readDirty() != nil else { return }
         let spi = ClamshellSPI()
         guard spi.setLidSleepDisabled(false) else {
             throw HingeError(message: "Lid sleep could not be restored. Recovery will retry; keep the Mac ventilated.")
@@ -214,8 +200,8 @@ enum Watchdog {
                 try restoreOwned()
                 return
             }
-            if let dirty = try StateFile.readDirty(), let session = dirty.session {
-                try StateFile.requestStop(session: session)
+            if let dirty = try StateFile.readDirty() {
+                try StateFile.requestStop(session: dirty.session)
             }
             Thread.sleep(forTimeInterval: 0.1)
         } while Date() < deadline

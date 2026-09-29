@@ -128,7 +128,7 @@ try check(StateFile.ownsLock && StateFile.readDirty() != nil, "pausing an active
 check(engine.turnOff() && !engine.armed && !engine.paused, "Turn Off clears a paused session")
 try check(!StateFile.ownsLock && StateFile.readDirty() == nil, "Turn Off of a paused session restores and releases")
 check(engine.arm() && engine.paused, "arm paused for remote stop")
-try StateFile.requestStop(session: StateFile.readDirty()!.session!)
+try StateFile.requestStop(session: StateFile.readDirty()!.session)
 engine.tickOnce()
 try check(!engine.armed && !StateFile.ownsLock && StateFile.readDirty() == nil, "remote stop ends a paused session")
 let pausedCrash = try child("pausedcrash")

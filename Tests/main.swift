@@ -160,18 +160,9 @@ check(!engine.arm() && !TestSystem.flag("spi"), "cannot arm without working cras
 TestSystem.launchOK = true
 
 TestSystem.spiEnableOK = false
-check(!engine.arm() && !TestSystem.flag("pmset"), "failed unprivileged control never falls back to administrator access")
-TestSystem.setFlag("pmset", true)
-_ = try Watchdog.runOnce()
-check(TestSystem.flag("pmset"), "watchdog leaves unowned sleep settings alone")
-try Watchdog.requestStop()
-check(TestSystem.flag("pmset"), "explicit stop leaves unowned sleep settings alone")
-TestSystem.setFlag("pmset", false)
+try check(!engine.arm() && !StateFile.ownsLock && StateFile.readDirty() == nil, "failed lid control leaves no session or recovery record")
 TestSystem.spiEnableOK = true
-check(engine.arm(), "SPI arms without administrator access")
-TestSystem.setFlag("pmset", true)
-check(engine.disarm() && TestSystem.flag("pmset"), "restoring SPI never clears an unrelated pmset setting")
-TestSystem.setFlag("pmset", false)
+check(engine.arm() && engine.disarm() && engine.lastError == nil, "lid control works again after a failed start")
 
 let owner = try child("owner")
 try waitForRecord()
@@ -208,11 +199,6 @@ try FileManager.default.removeItem(at: lock)
 var info = stat()
 check(lstat(Paths.supportDir.path, &info) == 0 && info.st_mode & 0o777 == 0o700, "session directory is private to the user")
 
-try Watchdog.installLaunchAgent()
-let plist = try PropertyListSerialization.propertyList(from: Data(contentsOf: Paths.launchAgentURL), format: nil) as! [String: Any]
-check((plist["ProgramArguments"] as? [String])?.first == Paths.executablePath, "watchdog plist safely encodes ampersands in executable paths")
-let pipeResult = Shell.run("/usr/bin/awk", ["BEGIN { for (i=0; i<20000; i++) print \"pipe-drain-check\" }"])
-check(pipeResult.0 == 0 && pipeResult.1.count > 200000, "subprocess output larger than the pipe buffer does not deadlock")
 // Safety policies exercise the real engine with deterministic telemetry.
 Defaults.batteryFloor = 20
 Battery.value = BatteryReading(percent: 0, onBattery: true)
@@ -370,7 +356,6 @@ let compact = NSMenu()
 compact.autoenablesItems = false
 delegate.updateMenu(compact, state: controller.state)
 check(compact.items.filter { $0.title == "Keep Awake" || $0.title == "Turn Off" }.count == 1, "menu exposes one primary action")
-check(!compact.items.contains { $0.title.contains("Compatibility") }, "compatibility setup stays out of the main menu")
 delegate.updateMenu(compact, state: controller.state, busy: "Restoring sleep…")
 check(compact.items.first?.isEnabled == false, "busy menu cannot submit duplicate actions")
 

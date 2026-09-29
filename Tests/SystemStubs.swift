@@ -66,7 +66,7 @@ enum IOPM {
     }
     static func snapshot() -> Snapshot {
         Snapshot(lidClosed: TestSystem.lidClosed, clamshellCausesSleep: !TestSystem.flag("spi"),
-                 sleepDisabled: TestSystem.flag("pmset"))
+                 sleepDisabled: false)
     }
 }
 enum IdleHold {

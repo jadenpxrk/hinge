@@ -258,7 +258,7 @@ final class StayEngine {
     /// recorded SPI pulse re-triggers the kernel decision for any user.
     private func finishSafetySleep() -> Bool {
         guard sleepPending else { return true }
-        guard IOPM.snapshot().lidClosed == true, !Displays.hasExternal else {
+        guard (IOPM.snapshot().lidClosed ?? lidClosed) == true, !Displays.hasExternal else {
             sleepPending = false
             lastError = nil
             return true

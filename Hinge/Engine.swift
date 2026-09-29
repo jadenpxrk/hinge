@@ -4,8 +4,10 @@ final class StayEngine {
     private let spi = ClamshellSPI()
     private var session = UUID()
 
-    private(set) var armed = false
-    private(set) var paused = false
+    private enum Phase { case idle, active, paused }
+    private var phase = Phase.idle
+    var armed: Bool { phase != .idle }
+    var paused: Bool { phase == .paused }
     private var armMode: ArmMode = .persistent
     private(set) var lastError: String?
     private var recoveryReadError: String?
@@ -64,13 +66,12 @@ final class StayEngine {
             try Watchdog.installLaunchAgent()
             session = UUID()
             try StateFile.markDirty(session: session)
-            armed = true
+            phase = .active
             awaitingCloseSince = mode == .nextClose && !lidClosed ? ProcessInfo.processInfo.systemUptime : nil
             if Displays.hasExternal {
-                paused = true
+                phase = .paused
                 notice = "Paused while an external display is connected"
             } else {
-                paused = false
                 try engage()
             }
             refreshSensors()
@@ -83,8 +84,7 @@ final class StayEngine {
 
     @discardableResult
     func disarm(reason: String = "user") -> Bool {
-        armed = false
-        paused = false
+        phase = .idle
         awaitingCloseSince = nil
         batteryStopAt = nil
         IdleHold.release()
@@ -176,12 +176,12 @@ final class StayEngine {
             _ = disarm(reason: "external display connected")
             return
         }
-        paused = true
+        phase = .paused
         notice = "Paused while an external display is connected"
     }
 
     private func resume() {
-        paused = false
+        phase = .active
         notice = nil
         do { try engage() } catch { fail(error.localizedDescription, reason: "resume failed") }
     }

@@ -522,11 +522,13 @@ func testGestureFilter() throws {
 @MainActor
 func testIdleGesture() throws {
     _ = try fresh("idleGesture")
-    let idleGesture = CloseGesture(isOptionHeld: { false })
+    var polls = 0
+    let idleGesture = CloseGesture(isOptionHeld: { polls += 1; return false })
     let readsBefore = LidAngle.reads
     defer { idleGesture.stop() }
     idleGesture.start()
     RunLoop.main.run(until: Date().addingTimeInterval(0.35))
+    try check(polls > 0, "idle gesture monitoring polls the Option key")
     try check(LidAngle.reads == readsBefore, "idle gesture monitoring never reads the hinge sensor")
 }
 
@@ -569,8 +571,9 @@ func testControllerAsync() throws {
     while !queuedStop && Date() < queueDeadline { RunLoop.main.run(until: Date().addingTimeInterval(0.02)) }
     try check(refreshed && queuedStop && !controller.state.armed, "queued status and stop requests complete in order")
     var lidEventsDone = false
+    TestSystem.lidClosed = true
     controller.perform(.arm(.nextClose))
-    controller.perform(.lidChanged(true))
+    controller.perform(.lidChanged(true)) { _ in TestSystem.lidClosed = false }
     controller.perform(.lidChanged(false)) { _ in lidEventsDone = true }
     let lidEventDeadline = Date().addingTimeInterval(10)
     while !lidEventsDone && Date() < lidEventDeadline { RunLoop.main.run(until: Date().addingTimeInterval(0.02)) }

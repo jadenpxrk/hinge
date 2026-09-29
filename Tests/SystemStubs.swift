@@ -6,6 +6,7 @@ enum TestSystem {
     static var spiRestoreOK = true
     static var idleOK = true
     static var launchOK = true
+    static var failBootstrap = false
     static var commands: [(String, [String])] = []
     static var lidClosed = false
     static var externalDisplay = false
@@ -89,6 +90,7 @@ enum TestCommands {
     static func run(_ path: String, _ args: [String]) -> (Int32, String) {
         if TestSystem.commandDelay > 0 { Thread.sleep(forTimeInterval: TestSystem.commandDelay) }
         TestSystem.commands.append((path, args))
+        if path == "/bin/launchctl", args.first == "bootstrap", TestSystem.failBootstrap { return (1, "bootstrap failed") }
         if path == "/bin/launchctl" { return (TestSystem.launchOK ? 0 : 1, "test launchctl") }
         fatalError("Unexpected system call: \(path) \(args)")
     }

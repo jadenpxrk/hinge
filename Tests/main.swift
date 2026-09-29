@@ -41,6 +41,7 @@ func fresh(_ name: String) throws -> StayEngine {
     TestSystem.spiRestoreOK = true
     TestSystem.idleOK = true
     TestSystem.launchOK = true
+    TestSystem.failBootstrap = false
     TestSystem.commands = []
     TestSystem.lidClosed = false
     TestSystem.externalDisplay = false
@@ -121,6 +122,7 @@ func runTests() throws {
         ("recoveryKeepsLowBatteryStart", testRecoveryKeepsLowBatteryStart),
         ("pausedSafetyStopOnDisconnect", testPausedSafetyStopOnDisconnect),
         ("recheckRestoresLeftoverRecord", testRecheckRestoresLeftoverRecord),
+        ("failedBootstrapRetries", testFailedBootstrapRetries),
         ("thermal", testThermal),
         ("telemetryDropout", testTelemetryDropout),
         ("safetyStopRestoreFailure", testSafetyStopRestoreFailure),
@@ -410,6 +412,15 @@ func testRecheckRestoresLeftoverRecord() throws {
     TestSystem.spiEnableOK = false
     try? Watchdog.recheckLidSleep()
     try check(!TestSystem.flag("spi"), "lid re-check restores a crashed owner's change before pulsing")
+}
+
+@MainActor
+func testFailedBootstrapRetries() throws {
+    let engine = try fresh("failedBootstrapRetries")
+    try "<plist>old</plist>".write(to: Paths.launchAgentURL, atomically: true, encoding: .utf8)
+    TestSystem.failBootstrap = true
+    try check(!engine.arm(), "a failed LaunchAgent bootstrap blocks arming")
+    try check(!engine.arm(), "a failed bootstrap is not skipped on the next arm")
 }
 
 @MainActor

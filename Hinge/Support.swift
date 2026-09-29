@@ -153,6 +153,7 @@ enum Watchdog {
         _ = SystemCommands.run("/bin/launchctl", ["bootout", service])
         let (status, output) = SystemCommands.run("/bin/launchctl", ["bootstrap", "gui/\(getuid())", url.path])
         guard status == 0 else {
+            try? FileManager.default.removeItem(at: url)
             throw HingeError(message: "Could not enable crash recovery. \(output)")
         }
     }

@@ -37,7 +37,7 @@ make install     # build and copy to /Applications/Hinge.app
 open /Applications/Hinge.app
 ```
 
-Installation copies and verifies the new bundle before atomically replacing the existing app. A failed copy or signature check leaves the existing app intact. Quit and reopen Hinge after updating to run the new version.
+Installation copies and verifies the new bundle beside the destination, then atomically swaps it with the existing app. A failed copy or signature check leaves the existing app intact. Quit and reopen Hinge after updating to run the new version.
 
 `make test` runs the regression checks separately. The checks compile the actual engine, storage, watchdog, and menu with simulated hardware and system commands. File locks, competing processes, crashes, recovery files, external-display pausing and paused-session ownership, safety policies, gesture filtering, command ordering, and main-thread responsiveness have regression coverage. `SystemAccess.swift` and `IOPM.swift` form the production boundary; tests supply isolated implementations without modifying or copying production source. Tests do not change actual sleep settings or administrator permissions.
 

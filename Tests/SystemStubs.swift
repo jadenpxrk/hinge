@@ -97,10 +97,10 @@ enum TestCommands {
 // This is the same boundary used by production, with isolated paths and commands.
 typealias SystemCommands = TestCommands
 enum Paths {
-    static let supportDir = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
-    static let dirtyURL = supportDir.appendingPathComponent("dirty")
-    static let stopURL = supportDir.appendingPathComponent("stop")
+    static var supportDir = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
+    static var dirtyURL: URL { supportDir.appendingPathComponent("dirty") }
+    static var stopURL: URL { supportDir.appendingPathComponent("stop") }
     static let launchAgentLabel = "dev.hinge.watchdog"
-    static let launchAgentURL = supportDir.appendingPathComponent("watchdog.plist")
+    static var launchAgentURL: URL { supportDir.appendingPathComponent("watchdog.plist") }
     static var executablePath: String { CommandLine.arguments[0] }
 }

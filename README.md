@@ -14,7 +14,7 @@
 - **For one lid close:** hold **⌥ Option** as you start closing the lid. Open it again to end the session.
 - **Until you turn it off:** choose **Keep Awake** from the menu bar, then **Turn Off** when you're done.
 
-Hinge pauses while an external display is connected and resumes when it's disconnected.
+Hinge pauses while an external display is connected and resumes when it's disconnected with the lid open.
 
 ## Install from source
 

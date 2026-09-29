@@ -16,7 +16,7 @@ Arming shows a brief confirmation on the built-in display only, with no all-disp
 
 Hinge uses the unprivileged `kPMSetClamshellSleepState` IOKit SPI (selector 12). It has no administrator setup or privileged fallback. An additional idle-sleep assertion prevents the idle timer from putting the Mac to sleep. No display-sleep assertion is taken.
 
-The SPI changes a shared system bit; it is not a process-scoped assertion. Apple's [RootDomainUserClient implementation](https://github.com/apple-oss-distributions/xnu/blob/main/iokit/Kernel/RootDomainUserClient.cpp) is the reference. A successful call is not a guarantee that another application or macOS cannot change the setting afterward. Avoid running multiple lid-control utilities at once. The SPI is undocumented and may change in future macOS versions.
+The SPI changes a shared system bit; it is not a process-scoped assertion. Apple's [RootDomainUserClient implementation](https://github.com/apple-oss-distributions/xnu/blob/main/iokit/Kernel/RootDomainUserClient.cpp) is the reference. A successful call is not a guarantee that another application or macOS cannot change the setting afterward. Avoid running multiple lid-control utilities at once. Run Hinge in one macOS account at a time; each account has its own session lock. The SPI is undocumented and may change in future macOS versions.
 
 Each Hinge session, including a paused one, holds an exclusive file lock in a private, user-owned recovery directory. Other Hinge processes cannot claim the same session. CLI stop commands request restoration from the owner and wait for it to release the session; they do not signal a PID or race the owner's reassertion timer.
 
@@ -77,7 +77,7 @@ On a ventilated desk, with no external display attached:
 2. From another machine, confirm an SSH connection still works and `date` advances.
 3. Open the lid; verify the menu-started session remains active, then turn it off.
 4. Arm again, then run `--off` from a separate terminal. Wait more than five seconds and verify it stays off.
-5. Verify connecting an external display pauses the session and disconnecting the last external display resumes it.
+5. Verify connecting an external display pauses the session and disconnecting the last external display with the lid open resumes it.
 6. Verify the gesture still works after sleep/wake. The confirmation must never cover an external display.
 7. Set macOS to require a password immediately after display-off. Arm, close, and reopen; verify the real macOS authentication screen appears. Also test Control–Command–Q while armed. Do not treat the confirmation panel as evidence of locking.
 8. Test battery protection with a threshold above the current charge while unplugged, including the switch from AC to battery. Do not intentionally overheat the Mac to test thermal protection; automated tests simulate the reported thermal state.

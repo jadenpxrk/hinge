@@ -70,7 +70,6 @@ final class StayEngine {
             awaitingCloseSince = mode == .nextClose && !lidClosed ? ProcessInfo.processInfo.systemUptime : nil
             if Displays.hasExternal {
                 phase = .paused
-                notice = "Paused while an external display is connected"
             } else {
                 try engage()
             }
@@ -177,12 +176,10 @@ final class StayEngine {
             return
         }
         phase = .paused
-        notice = "Paused while an external display is connected"
     }
 
     private func resume() {
         phase = .active
-        notice = nil
         do { try engage() } catch { fail(error.localizedDescription, reason: "resume failed") }
     }
 

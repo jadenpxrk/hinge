@@ -121,6 +121,7 @@ func runTests() throws {
         ("batteryFloorRaised", testBatteryFloorRaised),
         ("recoveryKeepsLowBatteryStart", testRecoveryKeepsLowBatteryStart),
         ("pausedSafetyStopOnDisconnect", testPausedSafetyStopOnDisconnect),
+        ("pausedStatusEndsWithSession", testPausedStatusEndsWithSession),
         ("recheckRestoresLeftoverRecord", testRecheckRestoresLeftoverRecord),
         ("failedBootstrapRetries", testFailedBootstrapRetries),
         ("thermal", testThermal),
@@ -400,6 +401,18 @@ func testPausedSafetyStopOnDisconnect() throws {
     TestSystem.externalDisplay = false
     engine.tickOnce()
     try check(!engine.armed && !TestSystem.flag("spi"), "disconnecting a display while too warm ends the session instead of resuming")
+}
+
+@MainActor
+func testPausedStatusEndsWithSession() throws {
+    let engine = try fresh("pausedStatusEndsWithSession")
+    TestSystem.externalDisplay = true
+    try check(engine.arm() && engine.state.title == "Paused while an external display is connected", "a paused session reports that it is paused")
+    try check(engine.turnOff() && engine.notice == nil && engine.state.title == "Normal lid sleep", "turning off a paused session clears the paused status")
+    try check(engine.arm() && engine.paused, "arm paused before a safety stop")
+    Thermals.state = .critical
+    engine.tickOnce()
+    try check(!engine.armed && engine.notice?.contains("too warm") == true, "a paused session's safety stop keeps its reason")
 }
 
 @MainActor

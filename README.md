@@ -4,21 +4,21 @@
 
 <h1 align="center">Hinge</h1>
 
-<p align="center">Keep your Mac awake with the lid closed.</p>
+<p align="center">Keep your Mac on when you close the lid.</p>
 <p align="center">Apple Silicon MacBooks · macOS 14+</p>
 
-![Hold Option while closing the lid to keep working with the screen off. Open the lid to end the session.](Design/how-it-works.svg)
+![Hold Option when you close the lid. The Mac stays on and the screen goes off. Open the lid to stop the session.](Design/how-it-works.svg)
 
 ## Use
 
-- **For one lid close:** hold **⌥ Option** as you start closing the lid. Open it again to end the session.
-- **Until you turn it off:** choose **Keep Awake** from the menu bar, then **Turn Off** when you're done.
+- **For one lid close:** Hold **⌥ Option** when you start to close the lid. Open the lid to stop the session.
+- **Until you stop it:** Select **Keep Awake** in the menu bar. Select **Turn Off** to stop the session.
 
-Hinge pauses while an external display is connected and resumes when it's disconnected with the lid open.
+When you connect an external display, Hinge pauses the session. When you disconnect the last external display with the lid open, the session starts again.
 
 ## Install from source
 
-Requires full **Xcode** and **XcodeGen**.
+You must have the full **Xcode** and **XcodeGen**.
 
 ```sh
 git clone https://github.com/jadenpxrk/Hinge.git
@@ -27,12 +27,12 @@ make install
 open /Applications/Hinge.app
 ```
 
-After updating, quit and reopen Hinge to use the new version.
+After you update Hinge, quit Hinge and open it again.
 
-## A few things to know
+## Safety
 
-- Battery protection defaults to **10%**. Change it in Settings.
-- Serious heat ends the awake session. **Keep your Mac ventilated—never running in a bag.**
-- Hinge uses an undocumented macOS API, so compatibility may change with system updates.
+- Battery protection stops the session at **10%**. You can change this value in Settings.
+- If the Mac becomes too hot, Hinge stops the session. **Keep the Mac in an area with good airflow. Do not put it in a bag.**
+- Hinge uses an undocumented macOS API. A macOS update can change how Hinge operates.
 
-[Technical details, commands & troubleshooting](docs/REFERENCE.md) · [MIT license](LICENSE)
+[Technical reference](docs/REFERENCE.md) · [MIT license](LICENSE)

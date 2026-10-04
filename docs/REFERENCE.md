@@ -2,53 +2,54 @@
 
 [Back to the quick start](../README.md)
 
-## Safety and gesture behavior
+## Safety
 
-Battery protection stops at 10% by default. Settings offers Off and thresholds from 5% through 50% in 5% steps. Users who already chose Off keep that setting. While on battery, crossing the selected threshold ends the awake session. A deliberate arm at or below the threshold is allowed above 0%, but the session ends if charge drops below the level at which it was armed. A reported 0% blocks or ends a protected battery session. On AC, low charge does not stop work. If protected battery telemetry is unavailable for 15 seconds, an active session ends; a new protected session requires valid telemetry.
+Battery protection stops the session at 10% charge. In Settings, you can select Off or a value from 5% to 50%, in 5% steps. On battery power, the session stops when the charge decreases to the value that you select.
 
-Serious or critical thermal pressure always ends the session and blocks re-arming until the Mac cools. Power-source and thermal notifications trigger checks immediately, with a five-second polling fallback. After a safety stop with the lid closed and no external display, Hinge asks macOS to sleep. Clearing Hinge's change already makes the kernel re-run its own lid-closed sleep decision; the explicit sleep request needs a login session, and when it is refused (for example a headless `--on` over SSH with nobody logged in) Hinge re-triggers that kernel decision instead. Failed restoration or sleep requests remain visible and retryable. A paused session ends without a sleep request because Hinge was not holding the Mac awake. Safety stops never automatically re-arm.
+You can start a session when the charge is at or below the selected value. That session stops if the charge decreases below the charge at the start. When battery protection is on and the battery shows 0%, Hinge does not start a session. It also stops a session that operates. On AC power, Hinge does not monitor the charge.
 
-Idle gesture monitoring checks the modifier key at 10 Hz without reading the hinge sensor. While Option is held, it samples at 40 Hz, requires a steady hold and consistent closing motion, and rejects implausible jumps. Sensor failures reset motion history and reconnect attempts are limited to once per second. Sleep/wake restarts gesture monitoring.
+If Hinge cannot read the battery status for 15 seconds, the session stops. Hinge does not start a new session until it can read the battery status.
 
-Arming shows a brief confirmation on the built-in display only, with no all-display dimming. It does not create a replacement lock screen or alter authentication settings. Follow Apple's [password-after-display-off settings](https://support.apple.com/en-gb/guide/mac-help/mchlp2270/mac) to require a password immediately.
+If the thermal state of the Mac is serious or critical, the session stops. You cannot start a new session until the Mac becomes cooler. Hinge checks the power source and the thermal state when they change, and every 5 seconds.
+
+When a safety check stops the session, the lid is closed, and no external display is connected, Hinge puts the Mac to sleep. Hinge does not start the session again after a safety stop. If Hinge cannot restore lid sleep, the menu shows an error and Hinge tries again at each check.
+
+## Gesture and external displays
+
+When you hold Option and close the lid, Hinge starts a session. The session stops when you open the lid. You must hold Option and close the lid in one continuous movement. If you do not close the lid in 30 seconds, the session stops. Hinge reads the hinge sensor only while you hold Option.
+
+When an external display is connected, Hinge pauses the session, and macOS controls lid sleep. When you disconnect the last external display with the lid open, the session starts again. When a paused session stops, Hinge does not put the Mac to sleep.
+
+When a session starts, Hinge shows a short message on the built-in display. Hinge does not lock the Mac and does not change the password settings. To set a password when the display goes off, refer to Apple's [password-after-display-off settings](https://support.apple.com/en-gb/guide/mac-help/mchlp2270/mac).
 
 ## Sleep control and recovery
 
-Hinge uses the unprivileged `kPMSetClamshellSleepState` IOKit SPI (selector 12). It has no administrator setup or privileged fallback. An additional idle-sleep assertion prevents the idle timer from putting the Mac to sleep. No display-sleep assertion is taken.
+Hinge uses the undocumented `kPMSetClamshellSleepState` IOKit call (selector 12) to disable lid sleep. This call does not need administrator rights. Hinge also holds an idle-sleep assertion, so the idle timer cannot put the Mac to sleep. Hinge does not keep the display on. For the source of the IOKit call, refer to Apple's [RootDomainUserClient source](https://github.com/apple-oss-distributions/xnu/blob/main/iokit/Kernel/RootDomainUserClient.cpp).
 
-The SPI changes a shared system bit; it is not a process-scoped assertion. Apple's [RootDomainUserClient implementation](https://github.com/apple-oss-distributions/xnu/blob/main/iokit/Kernel/RootDomainUserClient.cpp) is the reference. A successful call is not a guarantee that another application or macOS cannot change the setting afterward. Avoid running multiple lid-control utilities at once. Run Hinge in one macOS account at a time; each account has its own session lock. The SPI is undocumented and may change in future macOS versions.
+The lid setting applies to the full system, not only to the Hinge process. Other apps and macOS can change it. Do not use other lid-control apps at the same time as Hinge. Use Hinge in only one macOS account at a time.
 
-Each Hinge session, including a paused one, holds an exclusive file lock in a private, user-owned recovery directory. Other Hinge processes cannot claim the same session. CLI stop commands request restoration from the owner and wait for it to release the session; they do not signal a PID or race the owner's reassertion timer.
+Each session holds a lock in `~/Library/Application Support/Hinge`, also when the session is paused. Thus, only one Hinge process can control the session. A stop command tells this process to restore lid sleep, and then waits until the process completes it.
 
-Before changing sleep behavior, Hinge writes a recovery record and verifies that its LaunchAgent is loaded. The agent checks every 20 seconds and at login. After a crash releases the file lock, the agent restores only the backend recorded by Hinge. Failed restores retain the record for another attempt. The watchdog leaves system settings alone when there is no ownership record. Crash recovery is therefore not instantaneous, and it requires the installed executable and a working user launchd session.
+Before Hinge changes the lid setting, it writes a recovery record. It also makes sure that its LaunchAgent, `dev.hinge.watchdog`, operates. The LaunchAgent starts when you log in, and then every 20 seconds. If the Hinge process stops unexpectedly, the LaunchAgent restores the setting in the record. The LaunchAgent does not change settings that Hinge did not record.
 
-Keep the executable at its installed path so the watchdog can find it.
+Recovery can take up to 20 seconds. For recovery, Hinge must stay at the path where you installed it. The recovery folder is private to your macOS account. It does not give protection from other software that operates as your account or as root.
 
-The private recovery directory protects against other local accounts. It is not a security boundary against software already running as your account or as root.
+## Build and test
 
-## Build and checks
-
-Requires full Xcode and XcodeGen. The installed command-line tools must point to Xcode. No Python or downloaded test dependencies are required.
+You must have the full Xcode and XcodeGen. Run `xcode-select` to make sure that the command-line tools use Xcode.
 
 ```sh
-make check       # regression checks plus a signed local app, without installing
+make check       # tests, then build a signed app without installing
 make             # build Hinge.app locally
-make install     # build and copy to /Applications/Hinge.app
-open /Applications/Hinge.app
+make install     # build and install to /Applications/Hinge.app
+make test        # tests only
 ```
 
-Installation copies and verifies the new bundle beside the destination, then atomically swaps it with the existing app. A failed copy or signature check leaves the existing app intact. Quit and reopen Hinge after updating to run the new version.
+`make install` copies the new app next to `/Applications/Hinge.app` and checks its signature. Then it swaps the two apps in one atomic operation. If the copy or the signature check fails, the installed app does not change. After you update Hinge, quit Hinge and open it again.
 
-`make test` runs the regression checks separately. The checks compile the actual engine, storage, watchdog, and menu with simulated hardware and system commands. File locks, competing processes, crashes, recovery files, external-display pausing and paused-session ownership, safety policies, gesture filtering, command ordering, and main-thread responsiveness have regression coverage. `SystemAccess.swift` and `IOPM.swift` form the production boundary; tests supply isolated implementations without modifying or copying production source. Tests do not change actual sleep settings or administrator permissions.
+`make test` compiles the engine, storage, watchdog, and menu code with simulated hardware. `Tests/SystemStubs.swift` replaces `SystemAccess.swift` and `IOPM.swift`. The tests do not change the sleep settings of your Mac.
 
-Both the build script and Xcode use the project generated from `project.yml` and the same `Hinge/Info.plist`:
-
-```sh
-make project
-open Hinge.xcodeproj
-```
-
-The app icon is the editable Icon Composer document at `Hinge/Hinge.icon`. Its transparent logo artwork is in `Assets/Hinge.png` inside that document. Open it in Icon Composer to adjust the background, placement, or appearance. Exported previews are in `Design/`. Xcode compiles the document into the app's asset catalog and generates the `.icns` fallback for older macOS versions.
+To use Xcode, run `make project`, and then open `Hinge.xcodeproj`. The app icon is `Hinge/Hinge.icon`. To change it, use Icon Composer. Exported previews are in `Design/`.
 
 ## Commands
 
@@ -56,37 +57,39 @@ The binary is `Hinge.app/Contents/MacOS/Hinge`:
 
 ```text
 Hinge                  Menu-bar app
-Hinge --on             Arm persistently and wait
-Hinge --off            Ask the owner to restore sleep and wait for confirmation
-Hinge --toggle         Stop a recorded session, or start a headless session
-Hinge --status         Read system settings and recorded recovery state
-Hinge --probe          Read-only connection and hinge-sensor diagnostics
-Hinge --restore-sleep  Restore only changes owned by Hinge
-Hinge --watchdog       Run one recovery check
+Hinge --on             Start a session. Wait until you stop it or the session stops.
+Hinge --off            Tell the owner to restore lid sleep. Wait for confirmation.
+Hinge --restore-sleep  Same as --off
+Hinge --toggle         Do --off if a session exists. If not, do --on.
+Hinge --status         Show the lid, sleep, battery, and recovery state
+Hinge --probe          Show connection and hinge-sensor data. Change nothing.
+Hinge --watchdog       Do one recovery check (the LaunchAgent uses this)
 ```
 
-A timeout or restoration failure exits nonzero. Stop commands leave unrelated sleep settings unchanged.
+If a command times out or cannot restore lid sleep, it exits with a nonzero status.
 
-URL commands are `hinge://arm`, `hinge://disarm`, and `hinge://toggle`. Links that would arm require confirmation so a website cannot silently start an awake session. The app also defines Arm, Disarm, Toggle, and Status App Intents.
+The URL commands are `hinge://arm`, `hinge://disarm`, and `hinge://toggle`. Before a link starts a session, Hinge asks you to confirm. Thus, a website cannot start a session without your approval. In Shortcuts, Hinge gives Arm, Disarm, Toggle, and Status actions.
 
-## Hardware acceptance check
+In the `--status` output, `SleepDisabled` shows the `pmset disablesleep` setting. Hinge does not change this setting. `AppleClamshellCausesSleep` can show an old value until the next lid event. Thus, it does not immediately confirm a change.
 
-On a ventilated desk, with no external display attached:
+## Hardware check
 
-1. Arm using the menu, then close the lid.
-2. From another machine, confirm an SSH connection still works and `date` advances.
-3. Open the lid; verify the menu-started session remains active, then turn it off.
-4. Arm again, then run `--off` from a separate terminal. Wait more than five seconds and verify it stays off.
-5. Verify connecting an external display pauses the session and disconnecting the last external display with the lid open resumes it.
-6. Verify the gesture still works after sleep/wake. The confirmation must never cover an external display.
-7. Set macOS to require a password immediately after display-off. Arm, close, and reopen; verify the real macOS authentication screen appears. Also test Control–Command–Q while armed. Do not treat the confirmation panel as evidence of locking.
-8. Test battery protection with a threshold above the current charge while unplugged, including the switch from AC to battery. Do not intentionally overheat the Mac to test thermal protection; automated tests simulate the reported thermal state.
+Put the Mac on a desk with good airflow. Disconnect all external displays.
 
-`SleepDisabled` normally remains absent or zero on the SPI path. `AppleClamshellCausesSleep` can be stale until a lid event; it is not a reliable immediate verification of an SPI write.
+1. Select Keep Awake in the menu. Then close the lid.
+2. From a different computer, connect to the Mac with SSH. Make sure that `date` shows the time increase.
+3. Open the lid. Make sure that the session continues. Then select Turn Off.
+4. Start a session again. In a different terminal, run `--off`. Wait more than 5 seconds. Make sure that the session stays off.
+5. Connect an external display. Make sure that the session pauses. Open the lid and disconnect the display. Make sure that the session starts again.
+6. Put the Mac to sleep and wake it. Make sure that the gesture operates. Make sure that the start message does not show on an external display.
+7. In macOS, set a password requirement immediately after the display goes off. Start a session, then close and open the lid. Make sure that the macOS login screen shows. Also, push Control–Command–Q while a session operates.
+8. Disconnect AC power. Set a battery value above the current charge. Make sure that the session stops. Also do this test when you change from AC power to battery power.
+
+Do not make the Mac hot to test thermal protection. The automated tests simulate the thermal state.
 
 ## Remove
 
-Turn off and quit Hinge first. If it reports a restoration failure, resolve that before removing the recovery agent. Then:
+Stop the session and quit Hinge. If Hinge shows a restore error, correct the error before you remove the LaunchAgent. Then run these commands:
 
 ```sh
 launchctl bootout gui/$UID/dev.hinge.watchdog

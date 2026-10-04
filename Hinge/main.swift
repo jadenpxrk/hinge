@@ -6,18 +6,17 @@ private let usage = """
 Hinge — keep a MacBook awake with the lid closed (screen off, machine on).
 
 Usage:
-  Hinge                     Menu-bar app
-  Hinge --on                Arm and block until SIGINT/SIGTERM
-  Hinge --off               Disarm and exit
-  Hinge --toggle
-  hinge://arm
-  hinge://disarm
-  hinge://toggle
-  Hinge --status            Print lid / sleep state
-  Hinge --probe             Read-only system and sensor diagnostics
-  Hinge --restore-sleep     Restore only Hinge-owned changes
-  Hinge --watchdog          Launch-agent entry (restore if owner died)
+  Hinge                  Menu-bar app
+  Hinge --on             Start a session. Wait until you stop it or the session stops.
+  Hinge --off            Tell the owner to restore lid sleep. Wait for confirmation.
+  Hinge --restore-sleep  Same as --off
+  Hinge --toggle         Do --off if a session exists. If not, do --on.
+  Hinge --status         Show the lid, sleep, battery, and recovery state
+  Hinge --probe          Show connection and hinge-sensor data. Change nothing.
+  Hinge --watchdog       Do one recovery check (the LaunchAgent uses this)
   Hinge --help
+
+URL commands: hinge://arm, hinge://disarm, hinge://toggle
 """
 
 private var signalSources: [AnyObject] = []

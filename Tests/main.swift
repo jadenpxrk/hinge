@@ -146,7 +146,7 @@ func runTests() throws {
     }
     print("\(tests.count - failures)/\(tests.count) tests passed; \(failures) failed.")
     if failures > 0 { exit(1) }
-    print("All regression checks passed. No real sleep settings or administrator permissions were changed.")
+    print("All regression checks passed.")
 }
 
 @MainActor
@@ -486,7 +486,7 @@ func testSafetyStopRestoreFailure() throws {
     TestSystem.spiRestoreOK = false
     Battery.value = BatteryReading(percent: 10, onBattery: true)
     engine.tickOnce()
-    try check(engine.needsRecovery && StateFile.readDirty() != nil, "safety stop retains failed backend recovery")
+    try check(engine.needsRecovery && StateFile.readDirty() != nil, "safety stop keeps recovery pending after a failed restore")
     TestSystem.spiRestoreOK = true
     PowerSleep.succeeds = false
     TestSystem.spiEnableOK = false

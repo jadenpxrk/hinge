@@ -3,7 +3,7 @@ set -eu
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TEST_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hinge-tests.XXXXXX")"
 trap 'rm -rf "$TEST_DIR"' EXIT
-# Explicit compile-time system boundary: no source rewriting or real power changes.
+# Stubs replace the system boundary at compile time, so real sleep settings never change.
 xcrun swiftc -module-cache-path "$TEST_DIR/ModuleCache" -framework AppKit \
   "$ROOT/Hinge/Engine.swift" "$ROOT/Hinge/SessionController.swift" \
   "$ROOT/Hinge/CloseGesture.swift" "$ROOT/Hinge/Support.swift" \

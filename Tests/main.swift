@@ -446,6 +446,7 @@ func testThermal() throws {
     Thermals.state = .serious
     engine.tickOnce()
     try check(!engine.armed && !TestSystem.flag("spi"), "serious thermal pressure restores sleep")
+    try check(engine.state.notice != nil && !engine.state.armed && !engine.state.needsRecovery, "a stopped session with a notice is not reported as running")
     try check(!engine.arm(), "thermal protection blocks re-arming until cooled")
     Thermals.state = .nominal
     TestSystem.lidClosed = false

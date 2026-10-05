@@ -115,9 +115,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if activelyKeepingAwake && !wasArmed { ArmedHUD.showArmed(mode: state.armMode) }
         if !activelyKeepingAwake { ArmedHUD.hide() }
         wasArmed = activelyKeepingAwake
-        let hasWarning = state.error != nil || state.needsRecovery || state.notice != nil
         let description = "Hinge — \(controller.busy ?? state.title)"
-        item?.button?.image = state.armed || hasWarning ? activeMenuBarIcon : inactiveMenuBarIcon
+        item?.button?.image = state.armed || state.needsRecovery ? activeMenuBarIcon : inactiveMenuBarIcon
         item?.button?.contentTintColor = nil
         item?.button?.toolTip = description
         item?.button?.setAccessibilityLabel(description)

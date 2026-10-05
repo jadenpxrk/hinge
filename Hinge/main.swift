@@ -140,13 +140,14 @@ do {
     case "--on":
         exit(runHeadlessArm())
     case "--off", "--restore-sleep":
+        let hadSession = try StateFile.readDirty() != nil
         try Watchdog.requestStop()
-        print("Hinge's sleep changes have been restored.")
+        print(hadSession ? "Hinge restored lid sleep." : "No Hinge session is active.")
         exit(0)
     case "--toggle":
         if try StateFile.readDirty() != nil {
             try Watchdog.requestStop()
-            print("Hinge's sleep changes have been restored.")
+            print("Hinge restored lid sleep.")
             exit(0)
         }
         exit(runHeadlessArm())

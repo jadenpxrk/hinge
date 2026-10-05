@@ -26,7 +26,7 @@ enum ArmedHUD {
         background.state = .active
         background.wantsLayer = true
         background.layer?.cornerRadius = 12
-        let message = mode == .persistent ? "On until you turn it off" : "On until you reopen the lid"
+        let message = mode == .persistent ? "Awake until you turn it off" : "Awake until you open the lid"
         let label = NSTextField(labelWithString: message)
         label.font = .systemFont(ofSize: 13, weight: .medium)
         label.alignment = .center

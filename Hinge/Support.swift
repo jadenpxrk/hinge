@@ -29,7 +29,7 @@ enum StateFile {
             throw HingeError(message: "Hinge's recovery folder must be a directory owned by your account.")
         }
         guard chmod(Paths.supportDir.path, 0o700) == 0 else {
-            throw HingeError(message: "Could not protect Hinge's recovery folder.")
+            throw HingeError(message: "Hinge cannot protect its recovery folder.")
         }
     }
 
@@ -40,7 +40,7 @@ enum StateFile {
             try prepareDirectory()
             let fd = open(Paths.supportDir.appendingPathComponent("owner.lock").path,
                           O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC, 0o600)
-            guard fd >= 0 else { throw HingeError(message: "Could not open the session lock.") }
+            guard fd >= 0 else { throw HingeError(message: "Hinge cannot open the session lock.") }
             var info = stat()
             guard fstat(fd, &info) == 0, info.st_mode & S_IFMT == S_IFREG,
                   info.st_uid == getuid(), info.st_nlink == 1 else {
@@ -51,7 +51,7 @@ enum StateFile {
                 let code = errno
                 close(fd)
                 if code == EWOULDBLOCK { return false }
-                throw HingeError(message: "Could not lock the awake session.")
+                throw HingeError(message: "Hinge cannot lock the session.")
             }
             lockFD = fd
             return true
@@ -65,7 +65,7 @@ enum StateFile {
     }
 
     static func markDirty(session: UUID) throws {
-        guard ownsLock else { throw HingeError(message: "No ownership of the awake session.") }
+        guard ownsLock else { throw HingeError(message: "Hinge does not own the session.") }
         let state = DirtyState(session: session)
         try writeAtomically(JSONEncoder().encode(state), to: Paths.dirtyURL)
     }
@@ -73,14 +73,14 @@ enum StateFile {
     private static func writeAtomically(_ data: Data, to url: URL) throws {
         var template = Array(Paths.supportDir.appendingPathComponent(".state.XXXXXX").path.utf8CString)
         let fd = mkstemp(&template)
-        guard fd >= 0 else { throw HingeError(message: "Could not create a private recovery file.") }
+        guard fd >= 0 else { throw HingeError(message: "Hinge cannot create a private recovery file.") }
         let path = String(cString: template)
         let handle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
         defer { unlink(path) }
         try handle.write(contentsOf: data)
         try handle.synchronize()
         guard rename(path, url.path) == 0 else {
-            throw HingeError(message: "Could not save the sleep recovery record.")
+            throw HingeError(message: "Hinge cannot save the recovery record.")
         }
     }
 
@@ -89,7 +89,7 @@ enum StateFile {
         let fd = open(Paths.dirtyURL.path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK)
         guard fd >= 0 else {
             if errno == ENOENT { return nil }
-            throw HingeError(message: "Could not safely open the sleep recovery record.")
+            throw HingeError(message: "Hinge cannot safely open the recovery record.")
         }
         let handle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
         var info = stat()
@@ -102,9 +102,9 @@ enum StateFile {
     }
 
     static func clearDirty() throws {
-        guard ownsLock else { throw HingeError(message: "No ownership of the awake session.") }
+        guard ownsLock else { throw HingeError(message: "Hinge does not own the session.") }
         if unlink(Paths.dirtyURL.path) != 0, errno != ENOENT {
-            throw HingeError(message: "Sleep was restored, but its recovery record could not be removed.")
+            throw HingeError(message: "Hinge restored lid sleep, but cannot remove the recovery record.")
         }
         unlink(Paths.stopURL.path)
     }
@@ -153,7 +153,7 @@ enum Watchdog {
         let (status, output) = SystemCommands.run("/bin/launchctl", ["bootstrap", "gui/\(getuid())", url.path])
         guard status == 0 else {
             try? FileManager.default.removeItem(at: url)
-            throw HingeError(message: "Could not enable crash recovery. \(output)")
+            throw HingeError(message: "Hinge cannot start crash recovery. \(output)")
         }
     }
 
@@ -163,7 +163,7 @@ enum Watchdog {
         guard try StateFile.readDirty() != nil else { return }
         let spi = ClamshellSPI()
         guard spi.setLidSleepDisabled(false) else {
-            throw HingeError(message: "Lid sleep could not be restored. Recovery will retry; keep the Mac ventilated.")
+            throw HingeError(message: "Hinge cannot restore lid sleep and will try again. Keep the Mac in an area with good airflow.")
         }
         try StateFile.clearDirty()
     }
@@ -179,7 +179,7 @@ enum Watchdog {
         guard ClamshellSPI().setLidSleepDisabled(true) else {
             try StateFile.clearDirty()
             StateFile.releaseLock()
-            throw HingeError(message: "The lid-sleep check could not be re-run. Open the lid to wake normally.")
+            throw HingeError(message: "Hinge cannot make macOS check the lid again. Open the lid to wake the Mac.")
         }
         try restoreOwned()
         StateFile.releaseLock()
@@ -207,6 +207,6 @@ enum Watchdog {
             }
             Thread.sleep(forTimeInterval: 0.1)
         } while Date() < deadline
-        throw HingeError(message: "Hinge has not confirmed sleep restoration. Open its menu and retry; the recovery record was kept.")
+        throw HingeError(message: "Hinge did not confirm that it restored lid sleep. Open the Hinge menu and try again. Hinge kept the recovery record.")
     }
 }

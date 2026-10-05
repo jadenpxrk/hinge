@@ -36,14 +36,15 @@ final class SettingsWindow: NSWindowController {
         status.font = .systemFont(ofSize: 13, weight: .semibold)
         stack.addArrangedSubview(status)
         status.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
-        label("Option + close: one session  •  Menu: until turned off")
+        label("Hold Option and close the lid: awake until you open it.")
+        label("Select Keep Awake: awake until you turn it off.")
         battery.addItems(withTitles: Defaults.batteryFloors.map { $0 == 0 ? "Battery protection: Off" : "Stop at \($0)% battery" })
         battery.target = self
         battery.action = #selector(changeBattery)
         battery.setAccessibilityLabel("Battery protection threshold")
         stack.addArrangedSubview(battery)
-        label("Safety stops the session for serious heat or your selected battery level.")
-        label("External displays pause and resume the session automatically.")
+        label("Hinge stops the session if the Mac is too hot or the battery is at your selected level.")
+        label("An external display pauses the session. When you disconnect it with the lid open, the session starts again.")
         window.center()
         refresh()
     }

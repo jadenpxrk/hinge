@@ -38,7 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func updateMenu(_ menu: NSMenu, state: SessionState, busy: String? = nil) {
         menu.removeAllItems()
-        let title = state.needsRecovery ? "Retry Sleep Restoration" : (state.canTurnOff ? "Turn Off" : "Keep Awake")
+        let title = state.needsRecovery ? "Restore Lid Sleep" : (state.canTurnOff ? "Turn Off" : "Keep Awake")
         let primary = NSMenuItem(title: busy ?? title, action: #selector(primaryAction), keyEquivalent: "")
         primary.target = self
         primary.isEnabled = busy == nil
@@ -78,7 +78,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         case "arm", "toggle":
             let alert = NSAlert()
             alert.messageText = "Allow this link to keep your Mac awake?"
-            alert.informativeText = "Your Mac will keep running with the lid closed. Continue only if you intended to start an awake session."
+            alert.informativeText = "The Mac stays on when you close the lid. Continue only if you started this action."
             alert.addButton(withTitle: "Keep Awake")
             alert.addButton(withTitle: "Cancel")
             if alert.runModal() == .alertFirstButtonReturn { controller.perform(.arm(.persistent)) }

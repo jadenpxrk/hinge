@@ -68,7 +68,7 @@ Hinge --watchdog       Do one recovery check (the LaunchAgent uses this)
 
 If a command times out or cannot restore lid sleep, it exits with a nonzero status.
 
-The URL commands are `hinge://arm`, `hinge://disarm`, and `hinge://toggle`. Before a link starts a session, Hinge asks you to confirm. Thus, a website cannot start a session without your approval. In Shortcuts, Hinge gives Arm, Disarm, Toggle, and Status actions.
+The URL commands are `hinge://arm`, `hinge://disarm`, and `hinge://toggle`. Before a link starts a session, Hinge asks you to confirm. Thus, a website cannot start a session without your approval. In Shortcuts, Hinge gives Keep Awake, Turn Off, Toggle, and Status actions.
 
 In the `--status` output, `SleepDisabled` shows the `pmset disablesleep` setting. Hinge does not change this setting. `AppleClamshellCausesSleep` can show an old value until the next lid event. Thus, it does not immediately confirm a change.
 

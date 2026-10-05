@@ -126,9 +126,9 @@ final class SessionController {
         }
         inFlight = true
         switch action {
-        case .arm: busy = "Starting awake session…"
+        case .arm: busy = "Starting session…"
         case .turnOff, .restoreLocal: busy = "Restoring sleep…"
-        case .toggle: busy = state.canTurnOff ? "Restoring sleep…" : "Starting awake session…"
+        case .toggle: busy = state.canTurnOff ? "Restoring sleep…" : "Starting session…"
         case .refresh, .lidChanged: break
         }
         onChange?()

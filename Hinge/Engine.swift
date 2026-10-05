@@ -60,7 +60,7 @@ final class StayEngine {
         lastError = nil
         do {
             guard try StateFile.acquireLock() else {
-                throw HingeError(message: "Another Hinge session is active. Turn it off before starting this one.")
+                throw HingeError(message: "Another Hinge session is active. Turn it off first.")
             }
             try Watchdog.restoreOwned()
             try Watchdog.installLaunchAgent()
@@ -128,14 +128,14 @@ final class StayEngine {
     }
 
     var statusTitle: String {
-        if needsRecovery { return "Sleep restoration needs attention" }
-        if recoveryReadError != nil { return "Sleep recovery record needs attention" }
+        if needsRecovery { return "Lid sleep needs attention" }
+        if recoveryReadError != nil { return "The recovery record needs attention" }
         if lastError != nil { return "Hinge needs attention" }
-        if paused { return "Paused while an external display is connected" }
-        if armed { return armMode == .persistent ? "Keeping awake until turned off" : "Keeping awake until the lid opens" }
+        if paused { return "The session is paused because an external display is connected" }
+        if armed { return armMode == .persistent ? "Awake until you turn it off" : "Awake until you open the lid" }
         if let notice { return notice }
-        if anotherSession { return "Another Hinge session needs to be turned off" }
-        if lastSleepDisabled == true { return "Sleep is disabled outside Hinge" }
+        if anotherSession { return "Another Hinge session is active" }
+        if lastSleepDisabled == true { return "A different app or setting disables sleep" }
         return "Normal lid sleep"
     }
 
@@ -154,10 +154,10 @@ final class StayEngine {
         guard spi.setLidSleepDisabled(true) else {
             // The bit never changed, so recovery has nothing to undo.
             try StateFile.clearDirty()
-            throw HingeError(message: "This Mac could not enable lid control.")
+            throw HingeError(message: "Hinge cannot disable lid sleep on this Mac.")
         }
         guard IdleHold.take() else {
-            throw HingeError(message: "Could not prevent idle sleep. The awake session was cancelled.")
+            throw HingeError(message: "Hinge cannot prevent idle sleep. The session stopped.")
         }
     }
 
@@ -187,9 +187,9 @@ final class StayEngine {
     private func reassert() -> Bool {
         guard armed, !paused else { return false }
         guard spi.setLidSleepDisabled(true) else {
-            let message = "Hinge lost the ability to keep this Mac awake."
+            let message = "Hinge cannot keep this Mac awake."
             let restored = disarm(reason: "keep-awake failed")
-            lastError = restored ? "\(message) Normal lid sleep was restored." : "\(message) \(lastError ?? "")"
+            lastError = restored ? "\(message) Hinge restored normal lid sleep." : "\(message) \(lastError ?? "")"
             return false
         }
         return true
@@ -204,7 +204,7 @@ final class StayEngine {
         refreshSensors()
         guard armed else { return }
         if let awaitingCloseSince, !lidClosed, now - awaitingCloseSince >= 30 {
-            notice = "Stopped because the lid was not closed"
+            notice = "The session stopped because you did not close the lid"
             _ = disarm(reason: "lid close abandoned")
             return
         }
@@ -223,7 +223,7 @@ final class StayEngine {
 
     private func safetyReason(now: TimeInterval, arming: Bool) -> String? {
         if Thermals.state == .serious || Thermals.state == .critical {
-            return "Mac is too warm. Wait for it to cool before keeping it awake."
+            return "The Mac is too hot. Let it cool, then try again."
         }
         let floor = Defaults.batteryFloor
         guard floor > 0 else { missingBatterySince = nil; return nil }
@@ -236,17 +236,17 @@ final class StayEngine {
         guard battery.onBattery == true, let percent = battery.percent else {
             if missingBatterySince == nil { missingBatterySince = now }
             if arming || now - (missingBatterySince ?? now) >= 15 {
-                return "Battery status is unavailable. Awake mode is off for battery protection."
+                return "Hinge cannot read the battery status, so battery protection stops the session."
             }
             return nil
         }
         missingBatterySince = nil
-        if percent == 0 { return "Battery reports 0%. Awake mode is off for battery protection." }
+        if percent == 0 { return "The battery shows 0%, so battery protection stops the session." }
         if arming || percent > floor {
             batteryStopAt = percent > floor ? nil : percent - 1
             return nil
         }
-        return percent <= batteryStopAt ?? floor ? "Stopped for battery protection (\(percent)% remaining)." : nil
+        return percent <= batteryStopAt ?? floor ? "Battery protection stopped the session at \(percent)%." : nil
     }
 
     /// Safety stops fail closed. Once Hinge's clamshell bit is cleared with the lid closed, XNU re-runs its own
@@ -265,7 +265,7 @@ final class StayEngine {
                 try Watchdog.recheckLidSleep()
                 fputs("Hinge: explicit sleep was refused (no console session); asked macOS to re-check the closed lid\n", stderr)
             } catch {
-                lastError = "Sleep protection was released, but macOS could not be asked to sleep. \(error.localizedDescription)"
+                lastError = "Hinge restored lid sleep, but macOS did not go to sleep. \(error.localizedDescription)"
                 fputs("Hinge: \(lastError ?? "")\n", stderr)
                 return false
             }

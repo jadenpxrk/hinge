@@ -2,8 +2,8 @@ import AppIntents
 import Foundation
 
 struct HingeArmIntent: AppIntent {
-    static let title: LocalizedStringResource = "Arm Hinge"
-    static let description = IntentDescription("Keep the Mac awake with the lid closed until disarmed.")
+    static let title: LocalizedStringResource = "Keep Awake with Hinge"
+    static let description = IntentDescription("Keep the Mac on when you close the lid, until you turn it off.")
     static let openAppWhenRun = true
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
@@ -13,8 +13,8 @@ struct HingeArmIntent: AppIntent {
 }
 
 struct HingeDisarmIntent: AppIntent {
-    static let title: LocalizedStringResource = "Disarm Hinge"
-    static let description = IntentDescription("Restore normal lid-close sleep.")
+    static let title: LocalizedStringResource = "Turn Off Hinge"
+    static let description = IntentDescription("Stop the session and restore normal lid sleep.")
     static let openAppWhenRun = true
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
@@ -45,8 +45,8 @@ struct HingeStatusIntent: AppIntent {
 
 struct HingeShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
-        AppShortcut(intent: HingeArmIntent(), phrases: ["Arm \(.applicationName)"], shortTitle: "Arm", systemImageName: "macbook")
-        AppShortcut(intent: HingeDisarmIntent(), phrases: ["Disarm \(.applicationName)"], shortTitle: "Disarm", systemImageName: "macbook")
+        AppShortcut(intent: HingeArmIntent(), phrases: ["Keep awake with \(.applicationName)"], shortTitle: "Keep Awake", systemImageName: "macbook")
+        AppShortcut(intent: HingeDisarmIntent(), phrases: ["Turn off \(.applicationName)"], shortTitle: "Turn Off", systemImageName: "macbook")
         AppShortcut(intent: HingeToggleIntent(), phrases: ["Toggle \(.applicationName)"], shortTitle: "Toggle", systemImageName: "macbook")
         AppShortcut(intent: HingeStatusIntent(), phrases: ["\(.applicationName) status"], shortTitle: "Status", systemImageName: "macbook")
     }

@@ -90,7 +90,6 @@ final class SessionController {
         for name in [NSWorkspace.screensDidWakeNotification, NSWorkspace.screensDidSleepNotification] {
             observe(workspace, name) { [weak self] in self?.perform(.refresh) }
         }
-        _ = ProcessInfo.processInfo.thermalState
         observe(.default, ProcessInfo.thermalStateDidChangeNotification) { [weak self] in self?.perform(.refresh) }
         let tick = Timer(timeInterval: 5, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.perform(.refresh) }

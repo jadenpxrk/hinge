@@ -43,7 +43,6 @@ final class CloseGesture {
     private var fast = false
     private var nextReconnect: TimeInterval = 0
     private let isOptionHeld: () -> Bool
-    var sensorAvailable: Bool { sensor.available }
 
     init(isOptionHeld: @escaping () -> Bool = { NSEvent.modifierFlags.contains(.option) }) {
         self.isOptionHeld = isOptionHeld

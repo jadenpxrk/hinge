@@ -13,7 +13,6 @@ struct HingeError: LocalizedError {
 }
 
 struct DirtyState: Codable {
-    var armedAt: Date
     var session: UUID
 }
 
@@ -67,7 +66,7 @@ enum StateFile {
 
     static func markDirty(session: UUID) throws {
         guard ownsLock else { throw HingeError(message: "No ownership of the awake session.") }
-        let state = DirtyState(armedAt: Date(), session: session)
+        let state = DirtyState(session: session)
         try writeAtomically(JSONEncoder().encode(state), to: Paths.dirtyURL)
     }
 

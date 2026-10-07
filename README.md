@@ -21,8 +21,8 @@ When you connect an external display, Hinge pauses the session. When you disconn
 You must have the full **Xcode** and **XcodeGen**.
 
 ```sh
-git clone https://github.com/jadenpxrk/Hinge.git
-cd Hinge
+git clone https://github.com/jadenpxrk/hinge.git
+cd hinge
 make install
 open /Applications/Hinge.app
 ```
